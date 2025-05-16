@@ -4,12 +4,13 @@ from starlette import status
 from apps.accounts.models import User
 from apps.accounts.services.password import PasswordManager
 from apps.core.date_time import DateTime
+from typing import Optional
 
 
 class UserManager:
 
     @classmethod
-    def create_user(cls, email: str, password: str, first_name: str | None = None, last_name: str | None = None,
+    def create_user(cls, email: str, password: str, first_name: Optional[str] = None, last_name: Optional[str] = None,
                     is_verified_email: bool = False, is_active: bool = False, is_superuser: bool = False,
                     role: str = 'user', updated_at: DateTime = None, last_login: DateTime = None):
         user_data = {
@@ -28,7 +29,7 @@ class UserManager:
         return user
 
     @staticmethod
-    def get_user(user_id: int | None = None, email: str = None) -> User | None:
+    def get_user(user_id: Optional[int] = None, email: Optional[str] = None) -> Optional[User]:
         """
         Retrieve a user based on their ID or email address.
 
@@ -53,7 +54,7 @@ class UserManager:
         return user
 
     @staticmethod
-    def get_user_or_404(user_id: int | None = None, email: str = None):
+    def get_user_or_404(user_id: Optional[int] = None, email: Optional[str] = None):
         user: User | None = None
         if user_id:
             user = User.get_or_404(user_id)
@@ -65,10 +66,10 @@ class UserManager:
         return user
 
     @classmethod
-    def update_user(cls, user_id: int, email: str | None = None, password: str | None = None,
-                    first_name: str | None = None, last_name: str | None = None, is_verified_email: bool | None = None,
-                    is_active: bool | None = None, is_superuser: bool | None = None, role: str | None = None,
-                    last_login: DateTime | None = None):
+    def update_user(cls, user_id: int, email: Optional[str] = None, password: Optional[str] = None,
+                    first_name: Optional[str] = None, last_name: Optional[str] = None, is_verified_email: Optional[bool] = None,
+                    is_active: Optional[bool] = None, is_superuser: Optional[bool] = None, role: Optional[str] = None,
+                    last_login: Optional[DateTime] = None):
         """
         Update a user by their ID.
         """

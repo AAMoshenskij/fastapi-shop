@@ -1,4 +1,5 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint, Text, DateTime, func, Numeric
+from sqlalchemy import Column, ForeignKey, Integer, String, Float, UniqueConstraint, Text, DateTime, func, Numeric
+from sqlalchemy.types import Float
 from sqlalchemy.orm import relationship
 
 from config.database import FastModel
@@ -7,20 +8,26 @@ from config.database import FastModel
 class Product(FastModel):
     __tablename__ = "products"
 
+    # Существующие поля (оставить без изменений)
     id = Column(Integer, primary_key=True)
     product_name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-
-    # Active: The product is ready to sell and is available to customers on the online store, sales channels, and apps.
-    # Archived: The product is no longer being sold and isn't available to customers on sales channels and apps.
-    # Draft: The product isn't ready to sell and is unavailable to customers on sales channels and apps.
-
-    # status_enum = Enum('active', 'archived', 'draft', name='status_enum')
     status = Column(String, default='draft')
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, nullable=True)
     published_at = Column(DateTime, nullable=True)
 
+    # Новые поля из CSV (добавить в конец класса)
+    main_category = Column(String(100))  # Пример: "sports & fitness"
+    sub_category = Column(String(200))   # Пример: "All Sports, Fitness & Outdoors"
+    external_link = Column(String(500))  # Ссылка на товар на Amazon (из CSV 'link')
+    external_image_url = Column(String(500))  # Внешняя картинка (из CSV 'image')
+    external_ratings = Column(Float)     # Рейтинг из CSV (например, 4.1)
+    external_ratings_count = Column(Integer)  # Количество оценок (из 'no_of_ratings', предварительно очистить от запятых)
+    external_price = Column(String(50))  # Цена из CSV (например, "₹648")
+    external_discount_price = Column(String(50))  # Цена со скидкой из CSV
+
+    # Существующие отношения (оставить без изменений)
     options = relationship("ProductOption", back_populates="product", cascade="all, delete-orphan")
     variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
     media = relationship("ProductMedia", back_populates="product", cascade="all, delete-orphan")

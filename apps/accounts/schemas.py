@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 from pydantic import BaseModel, EmailStr, field_validator, model_validator
+from typing import Optional
 
 from apps.accounts.services.password import PasswordManager
 
@@ -227,8 +228,8 @@ class EmailChangeVerifyOut(BaseModel):
 class UserSchema(BaseModel):
     user_id: int
     email: EmailStr
-    first_name: str | None
-    last_name: str | None
+    first_name: Optional[str]
+    last_name: Optional[str]
     is_verified_email: bool
     date_joined: str
     updated_at: str
@@ -240,8 +241,8 @@ class CurrentUserOut(BaseModel):
 
 
 class UpdateUserSchema(BaseModel):
-    first_name: str | None
-    last_name: str | None
+    first_name: Optional[str]
+    last_name: Optional[str]
 
 
 class UpdateUserIn(BaseModel):

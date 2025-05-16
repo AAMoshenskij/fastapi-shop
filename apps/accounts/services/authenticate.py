@@ -264,13 +264,21 @@ class AccountService:
 
         # --- resend new OTP ---
         token.check_time_remaining()
-        match request_type:
-            case 'register':
-                EmailService.register_send_verification_email(email)
-            case 'change-email':
-                EmailService.change_email_send_verification_email(email)
-            case 'reset-password':
-                EmailService.reset_password_send_verification_email(email)
+        if request_type == 'register':
+            EmailService.register_send_verification_email(email)
+        elif request_type == 'change-email':
+            EmailService.change_email_send_verification_email(email)
+        elif request_type == 'reset-password':
+            EmailService.reset_password_send_verification_email(email)
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown request type: {request_type}"
+            )
+
+
+
+
 
     @classmethod
     def logout(cls, current_user):

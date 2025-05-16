@@ -8,6 +8,7 @@ from pyotp import TOTP
 from apps.accounts.models import User, UserVerification
 from apps.accounts.services.user import UserManager
 from config.settings import AppConfig
+from typing import Union
 
 
 class TokenService:
@@ -15,7 +16,7 @@ class TokenService:
     Manage "jwt-token" or "otp-token" that used for authentication.
     """
 
-    user: User | None
+    user: Union[User, None]
     user_id: int
 
     app_config = AppConfig.get_config()
@@ -26,7 +27,7 @@ class TokenService:
                                           detail="Could not validate credentials.",
                                           headers={"WWW-Authenticate": "Bearer"})
 
-    def __init__(self, user: int | User | None = None):
+    def __init__(self, user: Union[int, User, None] = None):
         if user is not None:
             if isinstance(user, User):
                 self.user = user
