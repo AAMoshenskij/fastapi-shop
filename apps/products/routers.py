@@ -31,6 +31,7 @@ attached to it.
 from fastapi import APIRouter, status, Form, UploadFile, File, HTTPException, Query, Path, Depends
 from fastapi import Request
 from fastapi.responses import JSONResponse
+from typing import Optional, List, Union
 
 from apps.accounts.services.permissions import Permission
 from apps.core.services.media import MediaService
@@ -197,8 +198,8 @@ when updating a product, actions on product's images are:
     description="Create a new product image.",
     tags=['Product Image'],
     dependencies=[Depends(Permission.is_admin)])
-async def create_product_media(request: Request, x_files: list[UploadFile] = File(), product_id: int = Path(),
-                               alt: str | None = Form(None)):
+async def create_product_media(request: Request, x_files: List[UploadFile] = File(), product_id: int = Path(),
+                               alt: Optional[str] = Form(None)):
     # check the file size and type
     for file in x_files:
         MediaService.is_allowed_extension(file)
@@ -244,7 +245,7 @@ async def list_product_media(request: Request, product_id: int):
     description='Updates an existing image.',
     tags=['Product Image'],
     dependencies=[Depends(Permission.is_admin)])
-async def update_media(request: Request, media_id: int, file: UploadFile = File(), alt: str | None = Form(None)):
+async def update_media(request: Request, media_id: int, file: UploadFile = File(), alt: Optional[str] = Form(None)):
     update_data = {}
 
     if file is not None:
@@ -281,3 +282,56 @@ async def delete_product_media(product_id: int, media_ids: str = Query(...)):
     dependencies=[Depends(Permission.is_admin)])
 async def delete_media_file(media_id: int):
     ProductService.delete_media_file(media_id)
+
+
+# Добавляем в apps/products/routers.py
+
+from fastapi import Query
+
+# Обновляем существующий эндпоинт list_produces
+@router.get(
+    '/',
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.ListProductOut,
+    summary='Retrieve a list of products',
+    description="""Retrieve a list of products with pagination and filtering.
+    
+    **Filters**:
+    - status: Filter by product status (active, archived, draft)
+    - min_price: Minimum product price
+    - max_price: Maximum product price
+    - search: Search in product names and descriptions
+    
+    **Pagination**:
+    - page: Page number (default 1)
+    - limit: Items per page (default 12)
+    """,
+    tags=['Product'])
+async def list_produces(
+    request: Request,
+    status: Optional[str] = Query(None, description="Filter by status (active, archived, draft)"),
+    min_price: Optional[float] = Query(None, description="Minimum product price"),
+    max_price: Optional[float] = Query(None, description="Maximum product price"),
+    search: Optional[str] = Query(None, description="Search in product names and descriptions"),
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(12, ge=1, le=100, description="Items per page")
+):
+    # TODO permission: admin users (admin, is_admin), none-admin users
+    # TODO as none-admin permission, list products that they status is `active`.
+    # TODO as none-admin, dont list the product with the status of `archived` and `draft`.
+    # TODO only admin can list products with status `draft`.
+    
+    filters = {
+        "status": status,
+        "min_price": min_price,
+        "max_price": max_price,
+        "search": search
+    }
+    
+    products = ProductService(request).list_products(page=page, limit=limit, filters=filters)
+    if products:
+        return {'products': products}
+    return JSONResponse(
+        content=None,
+        status_code=status.HTTP_204_NO_CONTENT
+    )

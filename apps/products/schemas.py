@@ -1,4 +1,6 @@
-from typing import Annotated, List
+from typing import List
+from typing import Optional
+
 
 from fastapi import Query, UploadFile
 from pydantic import BaseModel, constr, field_validator, model_validator
@@ -15,16 +17,16 @@ class VariantSchema(BaseModel):
     product_id: int
     price: float
     stock: int
-    option1: int | None
-    option2: int | None
-    option3: int | None
+    option1: Optional[int]
+    option2: Optional[int]
+    option3: Optional[int]
     created_at: str
-    updated_at: str | None
+    updated_at: Optional[str]
 
 
 class UpdateVariantIn(BaseModel):
-    price: float | None = None
-    stock: int | None = None
+    price: Optional[float] = None
+    stock: Optional[int] = None
 
 
 class UpdateVariantOut(BaseModel):
@@ -36,7 +38,7 @@ class RetrieveVariantOut(BaseModel):
 
 
 class ListVariantsOut(BaseModel):
-    variants: list[VariantSchema]
+    variants: List[VariantSchema]
 
 
 """
@@ -54,12 +56,12 @@ class OptionItemOut(BaseModel):
 class OptionOut(BaseModel):
     options_id: int
     option_name: str
-    items: list[OptionItemOut]
+    items: List[OptionItemOut]
 
 
 class OptionIn(BaseModel):
     option_name: constr(min_length=1)
-    items: list[str]
+    items: List[str]
 
     @field_validator('items')
     def not_empty(cls, value):
@@ -81,12 +83,12 @@ class ProductMediaSchema(BaseModel):
     alt: str
     src: str
     type: str
-    updated_at: str | None
+    updated_at: Optional[str]
     created_at: str
 
 
 class CreateProductMediaOut(BaseModel):
-    media: list[ProductMediaSchema]
+    media: List[ProductMediaSchema]
 
 
 class CreateProductMediaIn(BaseModel):
@@ -107,7 +109,7 @@ class MultiFileUpload(BaseModel):
 
 
 class RetrieveProductMediaOut(BaseModel):
-    media: list[ProductMediaSchema] | None = None
+    media: Optional[List[ProductMediaSchema]] = None 
 
 
 class UpdateMediaOut(BaseModel):
@@ -127,17 +129,17 @@ class RetrieveMediaOut(BaseModel):
 
 class ProductSchema(BaseModel):
     product_id: int
-    product_name: Annotated[str, Query(max_length=255)]
-    description: str | None
-    status: str | None
+    product_name: str = Query(..., max_length=255)
+    description: Optional[str]
+    status: Optional[str]
 
     created_at: str
-    updated_at: str | None
-    published_at: str | None
+    updated_at: Optional[str]
+    published_at: Optional[str]
 
-    options: list[OptionOut] | None
-    variants: list[VariantSchema] | None
-    media: list[ProductMediaSchema] | None = None
+    options: Optional[List[OptionOut]] = None
+    variants: Optional[List[VariantSchema]] = None
+    media: Optional[List[ProductMediaSchema]] = None
 
 
 class CreateProductOut(BaseModel):
@@ -148,13 +150,13 @@ class CreateProductOut(BaseModel):
 
 
 class CreateProductIn(BaseModel):
-    product_name: Annotated[str, Query(max_length=255, min_length=1)]
-    description: str | None = None
-    status: str | None = None
+    product_name: str = Query(..., max_length=255, min_length=1)
+    description: Optional[str] = None
+    status: Optional[str] = None
     price: float = 0
     stock: int = 0
 
-    options: list[OptionIn] | None = None
+    options: Optional[List[OptionIn]] = None
 
     class Config:
         from_attributes = True
@@ -207,14 +209,27 @@ class ListProductIn(BaseModel):
 
 
 class ListProductOut(BaseModel):
-    products: list[ProductSchema]
+    products: List[ProductSchema]
 
 
 class UpdateProductIn(BaseModel):
-    product_name: Annotated[str, Query(max_length=255, min_length=1)] | None = None
-    description: str | None = None
-    status: str | None = None
+    product_name: Optional[str] = Query(None, max_length=255, min_length=1)
+    description: Optional[str] = None
+    status: Optional[str] = None
 
 
 class UpdateProductOut(BaseModel):
     product: ProductSchema
+
+
+# Добавляем в apps/products/schemas.py
+
+class PaginatedProductList(BaseModel):
+    items: List[ProductSchema]
+    total: int
+    page: int
+    limit: int
+    pages: int
+
+class ListProductOut(BaseModel):
+    products: PaginatedProductList

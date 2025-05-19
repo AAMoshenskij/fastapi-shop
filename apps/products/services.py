@@ -1,4 +1,5 @@
 from itertools import product as options_combination
+from typing import Optional, List, Union
 
 from fastapi import Request
 from sqlalchemy import select, and_, or_
@@ -11,17 +12,17 @@ from config.database import DatabaseManager
 
 
 class ProductService:
-    request: Request | None = None
+    request: Optional[Request]= None
     product = None
-    price: int | float
+    price: Union[int, float]
     stock: int
-    options: list | None = []
-    options_data: list = []
-    variants: list = []
-    media: list | None = None
+    options: Optional[List] = [] 
+    options_data: List = []
+    variants: List = []
+    media: Optional[List] = None
 
     @classmethod
-    def __init__(cls, request: Request | None = None):
+    def __init__(cls, request: Optional[Request] = None):
         cls.request = request
 
     @classmethod
@@ -382,7 +383,7 @@ class ProductService:
         return cls.retrieve_single_media(media_id)
 
     @staticmethod
-    def delete_product_media(product_id, media_ids: list[int]):
+    def delete_product_media(product_id, media_ids: List[int]):
 
         # Fetch the product media records to be deleted
         with DatabaseManager.session as session:
@@ -412,3 +413,82 @@ class ProductService:
             ProductMedia.delete(ProductMedia.get_or_404(media_id))
             return True
         return False
+
+
+# Добавляем в apps/products/services.py
+
+from sqlalchemy import or_, and_, func
+
+@classmethod
+def list_products(cls, page: int = 1, limit: int = 12, filters: dict = None):
+    """
+    Retrieve paginated and filtered list of products.
+    """
+    offset = (page - 1) * limit
+    query = cls._build_product_query(filters)
+    
+    with DatabaseManager.session as session:
+        # Get total count for pagination
+        total = session.query(func.count(Product.id)).select_from(Product)
+        if query is not None:
+            total = total.filter(query)
+        total = total.scalar()
+        
+        # Get paginated results
+        products_query = session.query(Product)
+        if query is not None:
+            products_query = products_query.filter(query)
+            
+        products = products_query.offset(offset).limit(limit).all()
+        
+        products_list = []
+        for product in products:
+            products_list.append(cls.retrieve_product(product.id))
+        
+        return {
+            "items": products_list,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "pages": (total + limit - 1) // limit  # Calculate total pages
+        }
+
+@classmethod
+def _build_product_query(cls, filters: dict):
+    """
+    Build SQLAlchemy query based on filters.
+    """
+    if not filters:
+        return None
+        
+    conditions = []
+    
+    # Status filter
+    if filters.get("status"):
+        status_values = filters["status"].split(",")
+        conditions.append(Product.status.in_(status_values))
+    
+    # Price range filter
+    if filters.get("min_price") is not None or filters.get("max_price") is not None:
+        # Join with variants to filter by price
+        from apps.products.models import ProductVariant
+        subquery = (
+            DatabaseManager.session.query(ProductVariant.product_id)
+            .group_by(ProductVariant.product_id)
+            .having(func.min(ProductVariant.price) >= (filters.get("min_price") or 0))
+            .having(func.max(ProductVariant.price) <= (filters.get("max_price") or float('inf')))
+            .subquery()
+        )
+        conditions.append(Product.id.in_(subquery))
+    
+    # Search filter
+    if filters.get("search"):
+        search = f"%{filters['search']}%"
+        conditions.append(
+            or_(
+                Product.product_name.ilike(search),
+                Product.description.ilike(search)
+            )
+        )
+    
+    return and_(*conditions) if conditions else None

@@ -6,6 +6,9 @@ from config.database import DatabaseManager
 from config.routers import RouterManager
 from config.settings import MEDIA_DIR
 
+from apps.products.routers import router as products_router
+
+
 # -------------------
 # --- Init Models ---
 # -------------------
@@ -41,3 +44,4 @@ app.mount("/media", StaticFiles(directory=MEDIA_DIR), name="media")
 # --------------------
 
 RouterManager(app).import_routers()
+app.include_router(products_router)

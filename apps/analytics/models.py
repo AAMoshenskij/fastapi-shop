@@ -3,7 +3,7 @@ from sqlalchemy import Column, Integer, String, DateTime, func
 from config.database import FastModel
 
 class UserActivity(FastModel):
-    __tablename__ = "user_activities"  # Это обязательно!
+    __tablename__ = "user_activities" 
     
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=True)  # Null для анонимных
